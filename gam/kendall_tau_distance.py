@@ -113,7 +113,7 @@ def distance_calc(x, y, indList):
        indList - list of tuples containing pairs of inversions
      Returns:
        d: calculated distance (scalar float)
-     """
+    """
     #    print('input x = ', x)
     #    print(' input y = ', y)
     #    print('input indList - ', indList)
@@ -148,14 +148,15 @@ def mergeSortDistance(r1, r2):
 
 
 def pairwise_distance_matrix(rankings, dask=False):
-    from sklearn.metrics import pairwise_distances
     import numpy as np
-    from dask_ml.metrics.pairwise import pairwise_distances as dask_pairwise_distances
-    import dask.array as da
-    if dask:
-        D = dask_pairwise_distances(da.array(rankings), rankings, metric=mergeSortDistance)
-    else:
-        D = pairwise_distances(rankings, rankings, metric=mergeSortDistance)
+    from sklearn.metrics import pairwise_distances
+
+    # from dask_ml.metrics.pairwise import pairwise_distances as dask_pairwise_distances
+    # import dask.array as da
+    # if dask:
+    #     D = dask_pairwise_distances(da.array(rankings), rankings, metric=mergeSortDistance)
+    # else:
+    D = pairwise_distances(rankings, rankings, metric=mergeSortDistance)
     return D
 
 
@@ -178,4 +179,3 @@ def pairwise_distance_matrix_legacy(rankings):
             row.append(distance)
         D.append(row)
     return D
-

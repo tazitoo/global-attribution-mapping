@@ -39,10 +39,21 @@ setup(
     long_description_content_type='text/markdown',
     license='Apache License 2.0',
     install_requires=[
-        "matplotlib > 2.2.0",
-        "pandas > 0.25.1",
-        "scikit-learn > 0.21.3",
-        "numpy > 1.17.2",
+        "matplotlib >= 3.4",
+        "pandas >= 1.4.0",
+        "scikit-learn >= 1.0.0",
+        "numpy >= 1.20.0",
     ],
-    python_requires=">=3.6",
-)
+    extras_require={
+        'dev': [
+            'pytest',
+            'pytest-cov',
+            'numba >= 0.53.1',
+        ],
+        'test': [
+            'pytest',
+            'pytest-cov',
+        ],
+    },)
+    # python_requires=">=3.10",
+# )

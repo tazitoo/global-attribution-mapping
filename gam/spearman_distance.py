@@ -7,13 +7,12 @@ TODO:
 - add tests
 """
 
-from sklearn.metrics import pairwise_distances
-import dask.array as da
-from dask_ml.metrics.pairwise import pairwise_distances as dask_pairwise_distances
 import numpy as np
+from numba import jit
 from sklearn.metrics import pairwise_distances
 
-from numba import jit
+# import dask.array as da
+# from dask_ml.metrics.pairwise import pairwise_distances as dask_pairwise_distances
 
 
 @jit
@@ -71,10 +70,13 @@ def pairwise_spearman_distance_matrix(rankings, dask=False):
         [array[array]]: Spearman Distance Matrix
     """
     if dask:
-        D = dask_pairwise_distances(da.array(rankings), rankings, metric=spearman_squared_distance)
+        D = dask_pairwise_distances(
+            da.array(rankings), rankings, metric=spearman_squared_distance
+        )
     else:
         D = pairwise_distances(rankings, rankings, metric=spearman_squared_distance)
     return D
+
 
 def pairwise_spearman_distance_matrix_legacy(rankings):
     """

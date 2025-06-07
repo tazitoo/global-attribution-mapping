@@ -5,8 +5,9 @@ TODO:
 - add integration tests
 - expand to use other distance metrics
 """
-import dask.array as da
-import dask.dataframe as dd
+
+# import dask.array as da
+# import dask.dataframe as dd
 
 import csv
 import logging
@@ -71,26 +72,13 @@ class GAM:
     ):
 
         self.attributions_path = attributions_path
-
         self.attributions = attributions
         self.feature_labels = feature_labels
 
-        # self.normalized_attributions = None
+        self.normalized_attributions = None
         self.use_normalized = use_normalized
         self.clustering_attributions = None
-
         self.cluster_method = cluster_method
-
-        self.distance = distance
-        if self.distance == "spearman":
-            self.distance_function = spearman_squared_distance
-        elif self.distance == "kendall":
-            self.distance_function = mergeSortDistance
-        else:
-            self.distance_function = (
-                distance
-            )  # assume this is  metric listed in pairwise.PAIRWISE_DISTANCE_FUNCTIONS
-
         self.scoring_method = scoring_method
         self.init_medoids = init_medoids
         self.swap_medoids = swap_medoids
@@ -98,24 +86,24 @@ class GAM:
         self.k = k
         self.max_iter = max_iter
         self.tol = tol
-        self.verbose = verbose
 
-        self.attributions = None
-        self.use_normalized = use_normalized
-        self.clustering_attributions = None
-        self.feature_labels = None
-
+        self.distance = distance
+        if self.distance == "spearman":
+            self.distance_function = spearman_squared_distance
+        elif self.distance == "kendall":
+            self.distance_function = mergeSortDistance
+        else:
+            self.distance_function = distance  # assume this is  metric listed in pairwise.PAIRWISE_DISTANCE_FUNCTIONS
 
         self.subpopulations = None
         self.subpopulation_sizes = None
         self.explanations = None
-
-        self.scoring_method = scoring_method
         self.score = None
 
+        self.verbose = verbose
         if seed:
             np.random.seed(seed=seed)
-            
+
     def _read_df_or_list(self):
         """
         Converts attributions to numpy array and feature labels to a list if a pandas dataframe, numpy array, or list is passed in,
@@ -124,25 +112,28 @@ class GAM:
             attributions (numpy.ndarray or dask.array): for example, [(.2, .8), (.1, .9)]
             feature labels (list): ("height", "weight")
         """
-        if isinstance(self.attributions, dd.DataFrame):
-            self.feature_labels = self.attributions.columns.tolist()
-            self.attributions = self.attributions.to_dask_array(lengths=True)
-        elif isinstance(self.attributions, pd.DataFrame):
+
+        if isinstance(self.attributions, pd.DataFrame):
             self.feature_labels = self.attributions.columns.tolist()
             self.attributions = np.asarray(self.attributions.values.tolist())
-        elif isinstance(self.attributions, (np.ndarray, list)) or isinstance(self.attributions, da.Array) or isinstance(self.feature_labels, (np.ndarray, list)) or isinstance(self.feature_labels, da.Array):
-            if (isinstance(self.attributions, (np.ndarray, list)) and self.feature_labels is None) or (self.attributions is None and self.feature_labels is not None):
-                raise ValueError("You must have both 'attributions' and 'feature_labels' if 'attributions' is not a dataframe.")
+        elif isinstance(self.attributions, (np.ndarray, list)) or isinstance(
+            self.feature_labels, (np.ndarray, list)
+        ):
+            if (
+                isinstance(self.attributions, (np.ndarray, list))
+                and self.feature_labels is None
+            ) or (self.attributions is None and self.feature_labels is not None):
+                raise ValueError(
+                    "You must have both 'attributions' and 'feature_labels' if 'attributions' is not a dataframe."
+                )
             elif isinstance(self.attributions, list):
                 self.attributions = np.asarray(self.attributions)
-            elif isinstance(self.attributions, (np.ndarray, da.Array)):
+            elif isinstance(self.attributions, (np.ndarray)):
                 self.attributions = self.attributions
             if isinstance(self.feature_labels, list):
                 self.feature_labels = self.feature_labels
             elif isinstance(self.feature_labels, np.ndarray):
                 self.feature_labels = self.feature_labels.tolist()
-            elif isinstance(self.feature_labels, da.Array):
-                self.feature_labels = self.feature_labels.compute().tolist()
         else:
             self.attributions = None
             self.feature_labels = None
@@ -265,7 +256,7 @@ class GAM:
             if display:
                 plt.show()
 
-    def generate(self, init_medoids):
+    def generate(self):
         """Clusters local attributions into subpopulations with global explanations"""
         if self.attributions_path is not None:
             self._read_local()

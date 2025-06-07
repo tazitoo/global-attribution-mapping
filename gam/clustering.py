@@ -4,27 +4,28 @@ Originally adapted from https://raw.githubusercontent.com/shenxudeu/K_Medoids/ma
 FastPAM1 from: https://arxiv.org/pdf/2008.05171.pdf
 Bandit PAM from: https://arxiv.org/pdf/2006.06856.pdf
 """
-import dask.array as da
 import math
 import sys
 import time
 from copy import deepcopy
 
+# import dask.array as da
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import pairwise_distances
-from dask_ml.metrics.pairwise import pairwise_distances as dask_pairwise_distances
+
+# from dask_ml.metrics.pairwise import pairwise_distances as dask_pairwise_distances
 from scipy.spatial.distance import cdist, pdist, squareform
+from sklearn.metrics import pairwise_distances
 
 
-def update(existingAggregate, new_values):
+def update(cluster_statistics, new_values):
     """ Batch updates mu and sigma for bandit PAM using Welford's algorithm
     Refs:
         https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
         https://stackoverflow.com/questions/56402955/whats-the-formula-for-welfords-algorithm-for-variance-std-with-batch-updates
     """
 
-    (count, mean, m2) = existingAggregate
+    (count, mean, m2) = cluster_statistics
     count += len(new_values)
     # newvalues - oldMean
     delta = np.subtract(new_values, [mean] * len(new_values))
@@ -36,8 +37,8 @@ def update(existingAggregate, new_values):
     return (count, mean, m2)
 
 
-def finalize(existingAggregate):
-    (count, mean, m2) = existingAggregate
+def finalize(cluster_statistics):
+    (count, mean, m2) = cluster_statistics
     (mean, variance, sampleVariance) = (mean, m2 / count, m2 / (count - 1))
     if count < 2:
         return float("nan")
@@ -47,11 +48,7 @@ def finalize(existingAggregate):
 def _get_random_centers(n_clusters, n_samples):
     """Return random points as initial centers
     """
-    init_ids = []
-    while len(init_ids) < n_clusters:
-        _ = np.random.randint(0, n_samples)
-        if _ not in init_ids:
-            init_ids.append(_)
+    init_ids = np.random.choice(n_samples, n_clusters, replace=False)
     return init_ids
 
 
@@ -154,8 +151,8 @@ def _find_first_medoid(X, n_clusters, dist_func, batchsize, verbose):
             # updates based on welford's algorithm
             # TODO - keep variance matrix to avoid conversion overflows
             var = sigma_x[j] ** 2 * n_used_ref
-            existingAggregate = (n_used_ref, mu_x[j], var)
-            updatedAggregate = update(existingAggregate, d)
+            cluster_statistics = (n_used_ref, mu_x[j], var)
+            updatedAggregate = update(cluster_statistics, d)
             mu_x[j], var, var_sample = finalize(updatedAggregate)
             sigma_x[j] = np.sqrt(var)
 
@@ -337,8 +334,8 @@ def _swap_bandit(X, centers, dist_func, max_iter, tol, verbose):
 
                 # updates based on welford's algorithm
                 # var = sigma_x[h, i]**2 * n_used_ref
-                # existingAggregate = (n_used_ref, mu_x[h, i], var)
-                # updatedAggregate = update(existingAggregate, K_jih)
+                # cluster_statistics = (n_used_ref, mu_x[h, i], var)
+                # updatedAggregate = update(cluster_statistics, K_jih)
                 # mu_x[h, i], var, var_sample = finalize(updatedAggregate)
                 # sigma_x[h, i] = np.sqrt(var)
 
@@ -513,15 +510,12 @@ def _get_cost(X, centers_id, dist_func):
     """Return total cost and cost of each cluster"""
     dist_mat = np.zeros((len(X), len(centers_id)))
     # compute distance matrix
-    if isinstance(X, np.ndarray):
-        dist_mat = pairwise_distances(
-            X, X[centers_id, :], metric=dist_func, n_jobs=-1
-        )
-    elif isinstance(X, da.Array):
-        d = dask_pairwise_distances(
-            X, np.asarray(X[centers_id, :]), metric=dist_func, n_jobs=-1
-        )
-        dist_mat = d.compute()
+    dist_mat = pairwise_distances(X, X[centers_id, :], metric=dist_func, n_jobs=-1)
+    # elif isinstance(X, da.Array):
+    #     d = dask_pairwise_distances(
+    #         X, np.asarray(X[centers_id, :]), metric=dist_func, n_jobs=-1
+    #     )
+    #     dist_mat = d.compute()
 
     mask = np.argmin(dist_mat, axis=1)
     # members = np.argmin(dist_mat, axis=1)
