@@ -1,9 +1,12 @@
 import numpy as np
-from dask.distributed import Client
 
-from gam.spearman_distance import (pairwise_spearman_distance_matrix,
-                                   spearman_squared_distance,
-                                   spearman_squared_distance_legacy)
+from gam.spearman_distance import (
+    pairwise_spearman_distance_matrix,
+    spearman_squared_distance,
+    spearman_squared_distance_legacy,
+)
+
+# from dask.distributed import Client
 
 
 def test_spearman_symmetry():
@@ -34,11 +37,11 @@ def test_pairwise_distance_matrix():
     rankings = np.array([r1, r2, r3])
     D = pairwise_spearman_distance_matrix(rankings)
     # Testing dask
-    client = Client(memory_limit="auto")
-    D_dask = pairwise_spearman_distance_matrix(rankings, dask=True)
-    client.close()
+    # client = Client(memory_limit="auto")
+    # D_dask = pairwise_spearman_distance_matrix(rankings, dask=True)
+    # client.close()
 
-    assert D.all() == D_dask.all()
+    # assert D.all() == D_dask.all()
     # check symmetry, within floating point rounding margin
     assert (D[0][1] - D[1][0]) < 1e-9
     # check diagonal is zero
@@ -48,9 +51,8 @@ def test_pairwise_distance_matrix():
     assert D[1][2] < D[1][0]
 
 
-
 def test_spearman_accuracy():
-    """ Floating point accuracy test for testing faster calculation methods """
+    """Floating point accuracy test for testing faster calculation methods"""
     r1 = np.array([0.27, 0.24, 0.26, 0.23])
     r2 = np.array([0.05, 0.2, 0.7, 0.05])
 

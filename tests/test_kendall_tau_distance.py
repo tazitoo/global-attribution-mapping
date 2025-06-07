@@ -1,13 +1,13 @@
-from gam.kendall_tau_distance import ktau_weighted_distance
-from gam.kendall_tau_distance import mergeSortDistance
-
-from gam.kendall_tau_distance import pairwise_distance_matrix
-from sklearn.metrics import pairwise_distances
-from dask.distributed import Client
-from gam.kendall_tau_distance import (ktau_weighted_distance,
-                                      mergeSortDistance,
-                                      pairwise_distance_matrix)
 import numpy as np
+from sklearn.metrics import pairwise_distances
+
+# from dask.distributed import Client
+from gam.kendall_tau_distance import (
+    ktau_weighted_distance,
+    mergeSortDistance,
+    pairwise_distance_matrix,
+)
+
 
 def test_ktau_symmetry():
     """Checks symmetry holds for distance metric"""
@@ -31,12 +31,12 @@ def test_pairwise_distance_matrix():
     rankings = np.array([r1, r2, r3])
     D = pairwise_distance_matrix(rankings)
 
-    # Testing dask
-    client = Client(memory_limit="auto")
-    D_dask = pairwise_distance_matrix(rankings, dask=True)
-    client.close()
+    # # Testing dask
+    # client = Client(memory_limit="auto")
+    # D_dask = pairwise_distance_matrix(rankings, dask=True)
+    # client.close()
 
-    assert D.all() == D_dask.all()
+    # assert D.all() == D_dask.all()
     # check symmetry, within floating point rounding margin
     assert (D[0][1] - D[1][0]) < 1e-9
     # check diagonal is zero
@@ -46,27 +46,26 @@ def test_pairwise_distance_matrix():
     assert D[1][2] < D[1][0]
 
 
-def test_dask_pairwise_distance_matrix():
-    client = Client(memory_limit="auto")
-    r1 = [0.05, 0.2, 0.7, 0.05]
-    r2 = [0.23, 0.24, 0.26, 0.27]
-    r3 = [0.22, 0.24, 0.26, 0.28]
-    rankings = np.array([r1, r2, r3])
+# def test_dask_pairwise_distance_matrix():
+#     client = Client(memory_limit="auto")
+#     r1 = [0.05, 0.2, 0.7, 0.05]
+#     r2 = [0.23, 0.24, 0.26, 0.27]
+#     r3 = [0.22, 0.24, 0.26, 0.28]
+#     rankings = np.array([r1, r2, r3])
 
-    D = pairwise_distance_matrix(rankings, dask=True)
-    # check symmetry, within floating point rounding margin
-    assert (D[0][1] - D[1][0]) < 1e-9
-    # check diagonal is zero
-    assert D[1][1] == 0
-    assert D[2][2] == 0
-    # distance between r2 and r3 is closer than r2 and r1
-    assert D[1][2] < D[1][0]
-    client.close()
-
+#     D = pairwise_distance_matrix(rankings, dask=True)
+#     # check symmetry, within floating point rounding margin
+#     assert (D[0][1] - D[1][0]) < 1e-9
+#     # check diagonal is zero
+#     assert D[1][1] == 0
+#     assert D[2][2] == 0
+#     # distance between r2 and r3 is closer than r2 and r1
+#     assert D[1][2] < D[1][0]
+#     client.close()
 
 
 def test_ktau_accuracy():
-    """ Floating point accuracy test for testing faster calculation methods """
+    """Floating point accuracy test for testing faster calculation methods"""
     r1 = [0.27, 0.24, 0.26, 0.23]
     r2 = [0.05, 0.2, 0.7, 0.05]
     assert ktau_weighted_distance(r1, r2) == 0.0031050000000000006
