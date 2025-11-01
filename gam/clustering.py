@@ -10,7 +10,6 @@ import time
 from copy import deepcopy
 
 
-import plotly.express as px
 import numpy as np
 import warnings
 
@@ -20,9 +19,9 @@ from scipy.spatial.distance import cdist
 from itertools import product
 
 try:
-    from dask_ml.metrics.pairwise import pairwise_distances as dask_pairwise_distances
+#    from dask_ml.metrics.pairwise import pairwise_distances as dask_pairwise_distances
+#    import dask_distance
     import dask.array as da
-    import dask_distance
 except:
     dask_arr = False
 else:
@@ -193,13 +192,7 @@ def _get_cost(X, centers_id, dist_func):
     """Return total cost and cost of each cluster"""
     dist_mat = np.zeros((len(X), len(centers_id)))
     # compute distance matrix
-    if isinstance(X, da.Array):
-        d = dask_pairwise_distances(
-            X, np.asarray(X[centers_id, :]), metric=dist_func, n_jobs=-1
-        )
-        dist_mat = d.compute()
-    else:
-        dist_mat = pairwise_distances(X, X[centers_id, :], metric=dist_func, n_jobs=-1)
+    dist_mat = pairwise_distances(X, X[centers_id, :], metric=dist_func, n_jobs=-1)
 
     mask = np.argmin(dist_mat, axis=1)
     # members = np.argmin(dist_mat, axis=1)
@@ -342,7 +335,7 @@ class KMedoids:
         self.members = members
 
         if plotit:
-            px.scatter(x=X[centers, 0], y=X[centers, 1])
+            raise NotImplementedError
 
         return
 
@@ -624,11 +617,7 @@ class KMedoids:
             mu_x (np.ndarray): The running mean.
             sigma_x (np.ndarray): The confidence interval.
         """
-        if isinstance(X, da.Array):
-            d = dask_distance.cdist(X[idx_ref, :], X[j, :].reshape(1, -1), metric=dist_func).squeeze()
-            d = d.compute()
-        else:
-            d = cdist(X[idx_ref, :], X[j, :].reshape(1, -1), metric=dist_func).squeeze()
+        d = cdist(X[idx_ref, :], X[j, :].reshape(1, -1), metric=dist_func).squeeze()
         
         if i == 0:
             td = d.sum()
@@ -723,11 +712,7 @@ class KMedoids:
         if solution_ids.shape[0] == 1:
             # save the single sample as a medoid
             centers[i] = solution_ids  # probably a type error
-            if isinstance(X, da.Array):
-                d = dask_distance.cdist(X, X[centers[i], :].reshape(1, -1), metric=dist_func).squeeze()
-                d = d.compute()
-            else:
-                d = cdist(X, X[centers[i], :].reshape(1, -1), metric=dist_func).squeeze()
+            d = cdist(X, X[centers[i], :].reshape(1, -1), metric=dist_func).squeeze()
             d_best = np.copy(d).reshape(-1, 1)
         else:  # this is fastPam build - with far fewer pts to evaluate
             tmp_arr = np.zeros((n_samples))
@@ -741,19 +726,6 @@ class KMedoids:
             tmp_arr = lambda_singles(solution_ids)
             idx = np.argmin(tmp_arr)
             centers[i] = solution_ids[idx]
-            if isinstance(X, da.Array):
-                d_best = (
-                    dask_distance.cdist(X, X[centers[i], :].reshape(1, -1), metric=dist_func)
-                    .squeeze()
-                    .reshape(-1, 1)
-                )
-                d_best = d_best.compute()
-            else:
-                d_best = (
-                    cdist(X, X[centers[i], :].reshape(1, -1), metric=dist_func)
-                    .squeeze()
-                    .reshape(-1, 1)
-                )
             d_best = (
                 cdist(X, X[centers[i], :].reshape(1, -1), metric=dist_func)
                 .squeeze()
@@ -808,15 +780,9 @@ class KMedoids:
         d_ji = d[:, i]
 
         if h_i == "h":
-            if isinstance(X, da.Array):
-                d_jh = dask_distance.cdist(
-                    X[idx_ref, :], X[h, :].reshape(1, -1), metric=dist_func
-                ).squeeze()
-                d_jh = d_jh.compute()
-            else:
-                d_jh = cdist(
-                    X[idx_ref, :], X[h, :].reshape(1, -1), metric=dist_func
-                ).squeeze()
+            d_jh = cdist(
+                X[idx_ref, :], X[h, :].reshape(1, -1), metric=dist_func
+            ).squeeze()
             K_jih = np.zeros(self.batchsize)
             diff_ji = d_ji[idx_ref] - D[idx_ref]
             idx = np.where(diff_ji > 0)
@@ -836,11 +802,7 @@ class KMedoids:
             return mu_x, sigma_x
 
         if h_i == "i":
-            if isinstance(X, da.Array):
-                d_jh = dask_distance.cdist(X, X[h, :].reshape(1, -1), metric=dist_func).squeeze()
-                d_jh = d_jh.compute()
-            else:
-                d_jh = cdist(X, X[h, :].reshape(1, -1), metric=dist_func).squeeze()
+            d_jh = cdist(X, X[h, :].reshape(1, -1), metric=dist_func).squeeze()
 
             # calculate K_jih
             K_jih = np.zeros_like(D)
@@ -894,11 +856,7 @@ class KMedoids:
 
             done = True  # let's be optimistic we won't find a swap
             
-            if isinstance(X, da.Array):
-                d = dask_distance.cdist(X, X[centers, :], metric=dist_func)
-                d = d.compute()
-            else:
-                d = cdist(X, X[centers, :], metric=dist_func)
+            d = cdist(X, X[centers, :], metric=dist_func)
             
             # cache nearest (D) and second nearest (E) distances to medoids
             tmp = np.partition(d, 1)
