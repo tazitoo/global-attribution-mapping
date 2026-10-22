@@ -1,6 +1,4 @@
 import numpy as np
-import dask.array as da
-from dask.distributed import Client
 
 from gam.spearman_distance import (pairwise_spearman_distance_matrix,
                                    spearman_squared_distance,
@@ -53,28 +51,4 @@ def test_spearman_accuracy():
     d2 = spearman_squared_distance_legacy(r2, r1)
     assert d1 == 363.37999999999994
     assert d2 == 363.37999999999994
-
-
-def test_dask_pairwise_distance_matrix():
-    r1 = np.array([0.05, 0.2, 0.7, 0.05])
-    r2 = np.array([0.23, 0.24, 0.26, 0.27])
-    r3 = np.array([0.22, 0.24, 0.26, 0.28])
-
-    rankings = np.array([r1, r2, r3])
-
-    with Client(dashboard_address=':0', n_workers=1) as client:
-      # Testing dask
-      D = pairwise_spearman_distance_matrix(da.from_array(rankings))
-
-      # Compute now if possible in prep for comparison
-      if hasattr(D, "compute"):
-        D = D.compute()
-  
-      # check symmetry, within floating point rounding margin
-      assert (D[0][1] - D[1][0]) < 1e-9
-      # check diagonal is zero
-      assert D[1][1] == 0
-      assert D[2][2] == 0
-      # distance between r2 and r3 is closer than r2 and r1
-      assert D[1][2] < D[1][0]
 

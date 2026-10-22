@@ -12,10 +12,6 @@ import pytest
 
 from gam import gam
 
-import dask.array as da
-import dask.dataframe as dd
-
-from dask.distributed import Client
 
 def test_read_df_or_list():
     # preprocessing
@@ -25,33 +21,6 @@ def test_read_df_or_list():
 
     att_arr = np.asarray(df.values.tolist())
     feat_labels_arr = np.asarray(df.columns.tolist())
-
-    with Client(dashboard_address=':0', n_workers=1) as client:
-            ddf = dd.read_csv("tests/test_attributes.csv")
-            ddf = ddf.repartition(npartitions=1) 
-    
-            # Persist keeps data in the cluster workers
-            dask_att_arr = da.from_array(att_list).persist()
-            dask_feat_labels_arr = da.from_array(feat_labels_list).persist()
-    
-            # Testing dask DataFrame
-            g_ddf = gam.GAM(attributions=ddf)
-            g_ddf.generate()
-    
-            assert hasattr(g_ddf, "attributions")
-            assert g_ddf.attributions.shape == (4, 3)
-            assert g_ddf.feature_labels == ["a1", "a2", "a3"]
-    
-            # Testing dask array
-            g_dask_list = gam.GAM(attributions=dask_att_arr, batchsize=100, feature_labels=dask_feat_labels_arr)
-            g_dask_list.generate()
-    
-            assert hasattr(g_dask_list, "attributions")
-            assert g_dask_list.attributions.shape == (4, 3)
-            assert g_dask_list.feature_labels == ["a1", "a2", "a3"]
-
-            assert hasattr(g_ddf, "feature_labels")
-            assert g_ddf.feature_labels == ["a1", "a2", "a3"]
 
     # Testing DataFrame
     g_df = gam.GAM(attributions=df)
@@ -191,19 +160,3 @@ def test_plotting_2attributes():
     assert len(output) > 0
     for ofile in output:
         os.remove(ofile)
-
-
-def test_dask_vs_numpy():
-    # Need for dask cleanup
-    with Client(dashboard_address=':0', n_workers=1) as client:
-        ddf = dd.read_csv("tests/test_attributes.csv")
-        ddf = ddf.repartition(npartitions=1)
-        g_ddf = gam.GAM(attributions=ddf)
-        g_ddf.generate()
-
-        df = pd.read_csv("tests/test_attributes.csv")
-        g_df = gam.GAM(attributions=df)
-        g_df.generate()
-
-        np.testing.assert_array_almost_equal(g_ddf.attributions, g_df.attributions)
-        assert g_ddf.feature_labels == g_df.feature_labels

@@ -8,8 +8,6 @@ TODO:
 """
 
 from sklearn.metrics import pairwise_distances as sklearn_pairwise_distances
-import dask.array as da
-from dask_ml.metrics.pairwise import pairwise_distances as dask_pairwise_distances
 import numpy as np
 
 from numba import jit
@@ -63,17 +61,14 @@ def pairwise_spearman_distance_matrix(rankings):
     """Returns Spearman Distances for the provided rankings
 
     Args:
-        rankings (numpy.array, dask.array): Normalized Attributions
-        dask (boolean): whether or not to use dask's implementation
+        rankings (numpy.array): Normalized Attributions
 
     Returns:
         [array[array]]: Spearman Distance Matrix
     """
-    if isinstance(rankings, da.Array):
-        D = dask_pairwise_distances(rankings, np.asarray(rankings), metric=spearman_squared_distance)
-    elif isinstance(rankings, np.ndarray):
-        D = sklearn_pairwise_distances(rankings, rankings, metric=spearman_squared_distance)
-    return D
+    if not isinstance(rankings, np.ndarray):
+        raise TypeError("rankings must be a numpy.ndarray")
+    return sklearn_pairwise_distances(rankings, rankings, metric=spearman_squared_distance)
 
 def pairwise_spearman_distance_matrix_legacy(rankings):
     """

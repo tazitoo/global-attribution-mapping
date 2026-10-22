@@ -22,13 +22,11 @@ logging.basicConfig(
 )
 
 try:
-    import dask.array as da
-    import dask.dataframe as dd
     import plotly.express as px
 except ImportError:
-    DASK=False
+    PLOTLY = False
 else:
-    DASK=True
+    PLOTLY = True
 
 class GAM:
     """Generates global attributions
@@ -36,8 +34,8 @@ class GAM:
     Args:
         k (int): number of clusters and centroids to form, default=2
         attributions_path (str): path for csv containing local attributions
-        attributions (pd.DataFrame, dd.DataFrame, np.array, da.array, list): in-memory dataframe holding local attributions
-        feature_labels (np.array, da.array, list): in-memory dataframe holding feature labels
+        attributions (pd.DataFrame, np.array, list): in-memory dataframe holding local attributions
+        feature_labels (np.array, list): in-memory dataframe holding feature labels
         cluster_method: None, or callable, default=None
             None - use GAM library routines for k-medoids clustering
             callable - user provided external function to perform clustering
@@ -116,22 +114,15 @@ class GAM:
         Converts attributions to numpy array and feature labels to a list if a pandas dataframe, numpy array, or list is passed in,
 
         Returns
-            attributions (numpy.ndarray or dask.array): for example, [(.2, .8), (.1, .9)]
+            attributions (numpy.ndarray): for example, [(.2, .8), (.1, .9)]
             feature labels (list): ("height", "weight")
         """
-        if isinstance(self.attributions, dd.DataFrame):
-            if not DASK:
-                raise ImportError("You must install GAM[complete] if you want to use dask or plot")
-            self.feature_labels = self.attributions.columns.tolist()
-            self.attributions = self.attributions.to_dask_array(lengths=True)
-        elif isinstance(self.attributions, pd.DataFrame):
+        if isinstance(self.attributions, pd.DataFrame):
             self.feature_labels = self.attributions.columns.tolist()
             self.attributions = np.asarray(self.attributions.values.tolist())
         elif (
             isinstance(self.attributions, (np.ndarray, list))
-            or isinstance(self.attributions, da.Array)
             or isinstance(self.feature_labels, (np.ndarray, list))
-            or isinstance(self.feature_labels, da.Array)
         ):
             if (
                 isinstance(self.attributions, (np.ndarray, list))
@@ -142,14 +133,8 @@ class GAM:
                 )
             elif isinstance(self.attributions, list):
                 self.attributions = np.asarray(self.attributions)
-            elif isinstance(self.attributions, (np.ndarray, da.Array)):
-                self.attributions = self.attributions
-            if isinstance(self.feature_labels, list):
-                self.feature_labels = self.feature_labels
-            elif isinstance(self.feature_labels, np.ndarray):
+            if isinstance(self.feature_labels, np.ndarray):
                 self.feature_labels = self.feature_labels.tolist()
-            elif isinstance(self.feature_labels, da.Array):
-                self.feature_labels = self.feature_labels.compute().tolist()
         else:
             self.attributions = None
             self.feature_labels = None
@@ -204,12 +189,6 @@ class GAM:
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes(clusters.members)
             self.explanations = self._get_explanations(clusters.centers)
-            # Making explanations return numerical values instead of dask arrays
-            if isinstance(self.explanations[0][0][1], da.Array):
-                explanations = []
-                for explanation in self.explanations:
-                    explanations.append([(x[0], x[1].compute()) for x in explanation])
-                self.explanations = explanations
         else:
             self.cluster_method(self)
 
@@ -254,8 +233,8 @@ class GAM:
             output_path_base: path to store plots
             display: option to display plot after generation, bool
         """
-        if not DASK:
-            raise ImportError("You must install GAM[complete] if you want to use dask or plot")
+        if not PLOTLY:
+            raise ImportError("You must install GAM[complete] if you want to plot")
         if not hasattr(self, "explanations"):
             self.generate()
 
