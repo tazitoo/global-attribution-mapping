@@ -4,6 +4,7 @@ and producing csv of global attributions
 """
 
 import glob
+import importlib.util
 import os
 
 import numpy as np
@@ -11,6 +12,14 @@ import pandas as pd
 import pytest
 
 from gam import gam
+
+# Plotting is an optional extra (plotly + kaleido). Skip plotting tests when
+# the backend isn't installed rather than failing on a core install.
+requires_plotting = pytest.mark.skipif(
+    importlib.util.find_spec("plotly") is None
+    or importlib.util.find_spec("kaleido") is None,
+    reason="plotting extra (plotly/kaleido) not installed",
+)
 
 
 def test_read_df_or_list():
@@ -96,6 +105,7 @@ def test_cluster():
     assert second_explanation_sum == pytest.approx(1)
 
 
+@requires_plotting
 def test_plotting_top2():
 
     explanations = [
@@ -119,6 +129,7 @@ def test_plotting_top2():
         os.remove(ofile)
 
 
+@requires_plotting
 def test_plotting_top3():
 
     explanations = [
@@ -142,6 +153,7 @@ def test_plotting_top3():
         os.remove(ofile)
 
 
+@requires_plotting
 def test_plotting_2attributes():
 
     explanations = [

@@ -26,11 +26,16 @@ with open(os.path.join(CURR_DIR, "README.md"), encoding="utf-8") as file_open:
 
 DESCRIPTION = "Global Explanations for Deep Neural Networks"
 
+interactive_requires = [
+    "plotly >= 5.22.0",
+    "kaleido >= 0.2.1",
+]
+
 extras_require = {
-    "complete": [
-        "plotly-express >= 0.4.1",
-        "nbformat >= 5.10.4",
-    ]
+    "interactive": interactive_requires,
+    # "complete" kept as an alias of "interactive" for backward compatibility
+    # (it previously also pulled in dask, which has since been removed).
+    "complete": interactive_requires,
 }
 
 setup(
@@ -46,11 +51,12 @@ setup(
     long_description_content_type="text/markdown",
     license="Apache License 2.0",
     install_requires=[
-        "pandas >= 1.1.3",
-        "scikit-learn >= 0.23.2",
         "numpy >= 1.22",
-        "kaleido == 0.2.1",
-        "joblib >= 1.2.0",
+        "pandas >= 2.0.3",
+        "scikit-learn >= 1.2.2",
+        "scipy >= 1.10",
+        "numba >= 0.57.0",
+        "joblib >= 1.4.1",
     ],
     extras_require=extras_require,
     python_requires=">=3.10",

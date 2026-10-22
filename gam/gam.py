@@ -234,7 +234,7 @@ class GAM:
             display: option to display plot after generation, bool
         """
         if not PLOTLY:
-            raise ImportError("You must install GAM[complete] if you want to plot")
+            raise ImportError("Plotting requires the optional plotting extra: pip install gam[interactive]")
         if not hasattr(self, "explanations"):
             self.generate()
 

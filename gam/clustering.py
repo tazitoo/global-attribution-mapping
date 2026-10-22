@@ -10,13 +10,17 @@ import time
 from copy import deepcopy
 
 
-import plotly.express as px
 import numpy as np
 
 from sklearn.metrics import pairwise_distances
 from scipy.spatial.distance import cdist
 
 from itertools import product
+
+try:
+    import plotly.express as px
+except ImportError:
+    px = None
 
 
 def update(existingAggregate, new_values):
@@ -326,6 +330,10 @@ class KMedoids:
         self.members = members
 
         if plotit:
+            if px is None:
+                raise ImportError(
+                    "Plotting requires the optional plotting extra: pip install gam[interactive]"
+                )
             px.scatter(x=X[centers, 0], y=X[centers, 1])
 
         return
