@@ -3,10 +3,15 @@ import time
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from gam.clustering import KMedoids
-from gam.spearman_distance import spearman_squared_distance
-import dask.dataframe as dd
+
+try:
+    import dask.dataframe as dd
+    DASK_AVAILABLE = True
+except ImportError:
+    DASK_AVAILABLE = False
 
 np.random.seed(42)
 
@@ -39,6 +44,7 @@ def test_banditPAM():
     assert np.isin(kmed2.centers, [256, 209, 470, 304]).all()
 
 
+@pytest.mark.skipif(not DASK_AVAILABLE, reason="dask not installed")
 def test_banditPAM_dask():
     # load the data
     ddf = dd.read_csv("tests/banditPAM_data.csv", dtype={'ARTICLE_ID': 'object'}).repartition(npartitions=4)

@@ -1,11 +1,16 @@
-from gam.kendall_tau_distance import pairwise_distance_matrix
-from sklearn.metrics import pairwise_distances
-from dask.distributed import Client
+import numpy as np
+import pytest
+
 from gam.kendall_tau_distance import (ktau_weighted_distance,
                                       mergeSortDistance,
                                       pairwise_distance_matrix)
-import numpy as np
-import dask.array as da
+
+try:
+    import dask.array as da
+    from dask.distributed import Client
+    DASK_AVAILABLE = True
+except ImportError:
+    DASK_AVAILABLE = False
 
 def test_ktau_symmetry():
     """Checks symmetry holds for distance metric"""
@@ -38,6 +43,7 @@ def test_pairwise_distance_matrix():
     assert D[1][2] < D[1][0]
 
 
+@pytest.mark.skipif(not DASK_AVAILABLE, reason="dask not installed")
 def test_dask_pairwise_distance_matrix():
     client = Client()
     r1 = [0.05, 0.2, 0.7, 0.05]
@@ -54,6 +60,24 @@ def test_dask_pairwise_distance_matrix():
     # distance between r2 and r3 is closer than r2 and r1
     assert D[1][2] < D[1][0]
     client.close()
+
+
+def test_pairwise_distance_matrix_invalid_input():
+    """Test that pairwise_distance_matrix raises TypeError for invalid input"""
+    with pytest.raises(TypeError, match="rankings must be numpy.ndarray"):
+        pairwise_distance_matrix([1, 2, 3])  # list instead of ndarray
+
+
+def test_ktau_weighted_distance_edge_cases():
+    """Test edge cases for ktau weighted distance"""
+    # Test with zero weights
+    r1 = [0.0, 0.0, 1.0]
+    r2 = [0.0, 0.0, 1.0]
+    assert ktau_weighted_distance(r1, r2) == 0
+    
+    # Test with different lengths should raise ValueError
+    with pytest.raises(ValueError):
+        ktau_weighted_distance([0.1, 0.9], [0.1, 0.8, 0.1])
 
 
 

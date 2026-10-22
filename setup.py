@@ -26,19 +26,22 @@ with open(os.path.join(CURR_DIR, "README.md"), encoding="utf-8") as file_open:
 
 DESCRIPTION = "Global Explanations for Deep Neural Networks"
 
+interactive_requires = [
+    "plotly[express] >= 5.22.0",
+    "pillow >= 11.3.0",
+]
+
 extras_require = {
     "dev": [
-        "pytest>= 3.10",
+        "pytest >= 6.0.1",
+        "pytest-cov >= 2.8.1",
         "ruff",
     ],
+    "interactive": interactive_requires,
     "complete": [
         "dask[complete] >= 2024.4.2",
-#        "dask-distance >= 0.2.0",
         "dask-ml >= 2025.1.0",
-        "plotly[express]>= 5.22.0",
-        "pillow >= 11.3.0",
-        ]
-
+    ] + interactive_requires,
 }
 
 setup(
@@ -54,11 +57,12 @@ setup(
     long_description_content_type="text/markdown",
     license="Apache License 2.0",
     install_requires=[
+        "joblib >= 1.4.1",
+        "kaleido >= 0.2.1",
+        "numba >= 0.57.0",
+        "numpy >= 1.22",
         "pandas >= 2.0.3",
         "scikit-learn >= 1.2.2",
-        "numpy >= 1.22",
-        "kaleido >= 0.2.1",
-        "joblib >= 1.2.0",
     ],
     extras_require=extras_require,
     python_requires=">=3.10",

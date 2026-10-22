@@ -12,10 +12,13 @@ import pytest
 
 from gam import gam
 
-#import dask.array as da
-#import dask.dataframe as dd
-
-from dask.distributed import Client
+try:
+    import dask.array as da
+    import dask.dataframe as dd
+    from dask.distributed import Client
+    DASK_AVAILABLE = True
+except ImportError:
+    DASK_AVAILABLE = False
 
 def test_read_df_or_list():
     # preprocessing
@@ -204,6 +207,42 @@ def test_plotting_2attributes():
     assert len(output) > 0
     for ofile in output:
         os.remove(ofile)
+
+
+def test_plot_error_without_plotly():
+    """Test that plot raises ImportError when plotly is not available"""
+    # Temporarily make plotly unavailable
+    import gam.gam as gam_module
+    original_plotly = gam_module.PLOTLY_AVAILABLE
+    gam_module.PLOTLY_AVAILABLE = False
+    
+    try:
+        g = gam.GAM(attributions_path="tests/test_attributes.csv")
+        with pytest.raises(ImportError, match="You must install plotly to use the plot method"):
+            g.plot()
+    finally:
+        # Restore original state
+        gam_module.PLOTLY_AVAILABLE = original_plotly
+
+
+def test_dask_import_error_handling():
+    """Test that GAM handles missing dask gracefully"""
+    # Temporarily make dask unavailable
+    import gam.gam as gam_module
+    original_dask = gam_module.DASK
+    gam_module.DASK = False
+    
+    try:
+        # Test that non-dask functionality still works
+        g = gam.GAM(attributions_path="tests/test_attributes.csv")
+        g.generate()
+        
+        # Test that dask array computations are skipped
+        assert hasattr(g, "explanations")
+        assert len(g.explanations) == 2
+    finally:
+        # Restore original state
+        gam_module.DASK = original_dask
 
 #def test_dask_vs_numpy():
 #    client = Client()

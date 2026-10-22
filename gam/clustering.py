@@ -14,18 +14,23 @@ import numpy as np
 import warnings
 
 from sklearn.metrics import pairwise_distances
+from sklearn.metrics import silhouette_score
 from scipy.spatial.distance import cdist
+
+import numpy as np
+import pandas as pd
+from numba import jit
+from typing import Union, Callable, Optional, List, Tuple
 
 from itertools import product
 
 try:
-#    from dask_ml.metrics.pairwise import pairwise_distances as dask_pairwise_distances
-#    import dask_distance
     import dask.array as da
-except:
-    dask_arr = False
-else:
-    dask_arr = True
+    import dask.dataframe as dd
+    from dask.distributed import Client
+    DASK_AVAILABLE = True
+except ImportError:
+    DASK_AVAILABLE = False
 
 
 def update(existingAggregate, new_values):
@@ -251,7 +256,7 @@ def _naive_swap(X, centers, dist_func, max_iter, tol, verbose):  # noqa:C901
             if verbose:
                 print("End Searching by no swaps")
             # edge case - build found the medoids, so we need to finish up the calc...
-            members, costs, tot_cost, dist_mat = _get_cost(X, centers_, dist_func)
+            # members, costs, tot_cost, dist_mat = _get_cost(X, centers_, dist_func)
             break
         current_iteration += 1
         print("Starting Iteration: ", current_iteration)
@@ -290,14 +295,14 @@ class KMedoids:
 
     def __init__(
         self,
-        n_clusters,
-        batchsize,
-        dist_func=_get_distance,
-        max_iter=1000,
-        tol=0.0001,
-        init_medoids=None,
-        swap_medoids=None,
-        verbose=False,
+        n_clusters: int,
+        batchsize: int,
+        dist_func: Union[str, Callable] = _get_distance,
+        max_iter: int = 1000,
+        tol: float = 0.0001,
+        init_medoids: Optional[str] = None,
+        swap_medoids: Optional[str] = None,
+        verbose: bool = False,
     ):
         self.n_clusters = n_clusters
         self.dist_func = dist_func
@@ -305,12 +310,12 @@ class KMedoids:
         self.tol = tol
         self.batchsize = batchsize
 
-        self.centers = None
-        self.members = None
+        self.centers: Optional[List[int]] = None
+        self.members: Optional[np.ndarray] = None
         self.init_medoids = init_medoids
         self.swap_medoids = swap_medoids
 
-    def fit(self, X, plotit=False, verbose=True):
+    def fit(self, X: np.ndarray, plotit: bool = False, verbose: bool = True) -> None:
         """Fits kmedoids with the option for plotting
 
         Args:
@@ -369,7 +374,7 @@ class KMedoids:
             tot_cost (int): The total cost of the distance matrix.
             dist_mat (np.ndarray): The matrix of distances from each point to all other points in the dataset.
         """
-        if not dask_arr:
+        if not DASK_AVAILABLE:
             warnings.warn(
                 "Please try installing GAM with at least `[dask]` in order to use the dask functionality"
             )

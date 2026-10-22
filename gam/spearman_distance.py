@@ -8,11 +8,15 @@ TODO:
 """
 
 from sklearn.metrics import pairwise_distances as sklearn_pairwise_distances
-import dask.array as da
-from dask_ml.metrics.pairwise import pairwise_distances as dask_pairwise_distances
 import numpy as np
-
 from numba import jit
+
+try:
+    import dask.array as da
+    from dask_ml.metrics.pairwise import pairwise_distances as dask_pairwise_distances
+    DASK_AVAILABLE = True
+except ImportError:
+    DASK_AVAILABLE = False
 
 
 @jit
@@ -69,10 +73,12 @@ def pairwise_spearman_distance_matrix(rankings):
     Returns:
         [array[array]]: Spearman Distance Matrix
     """
-    if isinstance(rankings, da.Array):
+    if DASK_AVAILABLE and isinstance(rankings, da.Array):
         D = dask_pairwise_distances(rankings, np.asarray(rankings), metric=spearman_squared_distance)
     elif isinstance(rankings, np.ndarray):
         D = sklearn_pairwise_distances(rankings, rankings, metric=spearman_squared_distance)
+    else:
+        raise TypeError("rankings must be numpy.ndarray or dask.array (if dask is installed)")
     return D
 
 def pairwise_spearman_distance_matrix_legacy(rankings):
